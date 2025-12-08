@@ -1,6 +1,6 @@
 const User=require("../models/user.model");
 const jwt=require("jsonwebtoken");
-const runRedis=require("../lib/redis");
+const redisClient=require("../lib/redis");
 const generateTokens= (userId)=>{
     const accessToken = jwt.sign({userId},process.env.ACCESS_TOKEN_SECRET,{
         expiresIn:"15m"
@@ -13,7 +13,6 @@ const generateTokens= (userId)=>{
 }
 
 const storeRefreshToken = async(userId,refreshToken)=>{
-    const redisClient=await runRedis();
     await redisClient.set(`refreshToken:${userId}`,refreshToken,"EX",7*24*60*60);
 }
 
@@ -81,6 +80,27 @@ const login=async (req,res)=>{
     res.send("Log in route called");
 }
 const logout=async (req,res)=>{
-    res.send("Log out route called");
+    try{
+        const refreshToken = req.cookies.refreshToken;
+         if (!refreshToken) {
+            return res.status(200).json({
+                message: "Already logged out"
+            });
+        }
+        if(refreshToken){
+            const decoded= jwt.verify(refreshToken,process.env.REFRESH_TOKEN_SECRET);
+            await redisClient.del(`refreshToken:${decoded.userId}`);
+            res.clearCookie("accessToken");
+            res.clearCookie("refreshToken");
+            res.json({
+                    message:"Logout successful"
+            })
+        }
+    }catch(error){
+        res.status(500).json({
+            message:"Server error",
+            error:error.message
+        })
+    }
 }
 module.exports={signup,login,logout};
