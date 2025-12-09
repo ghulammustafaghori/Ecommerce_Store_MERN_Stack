@@ -171,4 +171,16 @@ const refreshToken=async(req,res)=>{
         })
     }
 }
-module.exports={signup,login,logout,refreshToken};
+
+
+const getProfile=async(req,res)=>{
+    try{
+
+    }catch(error){
+
+    }
+}
+
+
+
+module.exports={signup,login,logout,refreshToken,getProfile};
